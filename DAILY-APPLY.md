@@ -21,22 +21,26 @@ Don't open postings, read descriptions or take screenshots here. Helper agents d
 ## Steps
 0. Name this session with today's date. Load deferred tools with ToolSearch. If a setup step fails, say so in one line
    and carry on.
-1. Check Chrome is connected (`tabs_context_mcp`). If it isn't, still do steps 2–3 and the feed in step 8, then send a
-   push notification ("Chrome isn't connected, so no applications today. Your job list is updated.") and stop.
-   Then `python resume/build.py --check`. If it lists anything, rebuild first (never start helpers on a stale resume).
-2. **Pick up what happened on the dashboard.** Read into a fresh folder (the `out_dir` option writes files and returns
-   only their paths, which keeps this session small):
+1. Check whether Chrome is connected with `list_connected_browsers`, which opens nothing, and remember the result for
+   step 3. Then `python resume/build.py --check`. If it lists anything, rebuild first (never start helpers on a stale resume).
+2. **Pick up what happened on the dashboard.** Read into `me/inbox` (the `out_dir` option writes files and returns only
+   their paths, which keeps this session small; `sync` empties the folder when it's done, so old files can't come back):
    - `ArtifactData list` collection `decisions`, `out_dir` `me/inbox`
    - `ArtifactData list` collection `questions`, `out_dir` `me/inbox`
    - `ArtifactData get` collection `state`, doc `settings`, `out_dir` `me/inbox`
    Then `python finder/finder.py sync me/inbox`. It applies skips and shortlists, updates settings, and prints answered
-   questions and the filled jobs that are ready. For each answered question:
-   - general ones, and any job answer that's really a general fact: add to the Question bank in `me/applicant-profile.md`;
-   - "Skip this job": `python finder/finder.py decide "<key>" skip "<question>"`;
-   - job-specific ones: keep them for that job's helper prompt;
-   - then mark it used: `ArtifactData update` collection `questions`, doc `<id>`, data `{"used": true}`, with its version.
-   If `paused` is true in settings, skip to step 8 and stop there.
+   questions and the filled jobs that are ready. To mark a question used: `ArtifactData update` collection `questions`,
+   doc `<id>`, data `{"used": true}`, `if_version` its version (shown in the list result, not in the saved file). For each
+   answered question:
+   - general ones, and any job answer that's really a general fact: add to the Question bank in `me/applicant-profile.md`,
+     then mark it used;
+   - "Skip this job": `python finder/finder.py decide "<key>" skip "<question>"`, then mark it used;
+   - job-specific ones: keep them for that job's helper prompt and **leave them unmarked until step 5**, so a run that
+     starts no helper doesn't lose them. If the job is already skipped or applied, just mark it used.
+   If `paused` is true in settings, skip to step 8 and stop there, with no notification.
 3. `python finder/finder.py run` (no AI tokens; it can take several minutes, so run it in the background and wait for it).
+   If Chrome wasn't connected in step 1, now do step 8, send a push notification ("Chrome isn't connected, so no
+   applications today. Your job list is updated.") and stop.
 4. Get today's list: filled jobs that sync reported ready, then `python finder/finder.py today <count>` up to the day's
    count: the number in the kickoff prompt if there is one, otherwise `daily.count` in `me/config.json`. `python finder/finder.py show blocked`
    is for the end summary only: never start a helper on those.
@@ -45,6 +49,7 @@ Don't open postings, read descriptions or take screenshots here. Helper agents d
    that job, and one approval line chosen by `daily.submit` in `me/config.json`:
    - `"auto"`: `Approved: fill and submit`
    - `"review"`: `Review first: fill only, stop before the final Submit`
+   Once a helper has its job's answers, mark those questions used.
 6. As each helper reports:
    - **SUBMITTED**: log it (below).
    - **NEEDS-ANSWERS**: post each question to the dashboard: `ArtifactData set`, collection `questions`, a new short

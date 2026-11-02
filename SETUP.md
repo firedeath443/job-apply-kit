@@ -23,7 +23,7 @@ Check, and install what's missing (ask before installing, `winget` on Windows, `
 - `python -m pip install --user -r requirements.txt`
 
 Then the things only they can do. Walk them through these and wait:
-- **Claude in Chrome** extension installed and signed in. Check with `tabs_context_mcp`. Point them to https://claude.ai/chrome.
+- **Claude in Chrome** extension installed and signed in. Check with `list_connected_browsers`. Point them to https://claude.ai/chrome.
 - **Gmail connector** (optional, for catching interview replies): claude.ai > Settings > Connectors. Fine to skip.
 - Signed in to LinkedIn and Indeed in Chrome, and their browser set to save passwords for job sites they already use.
 

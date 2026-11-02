@@ -15,7 +15,7 @@ Filtering is deliberately loose. Jobs the applicant can't realistically get are 
 Sources with no key: Lever, Greenhouse, Ashby, Workday and BambooHR career sites, GovernmentJobs, Himalayas,
 Jobicy, Remotive, plus Indeed, LinkedIn and Glassdoor through python-jobspy.
 """
-import html, json, os, re, sqlite3, sys, time, traceback
+import html, json, os, re, shutil, sqlite3, sys, time, traceback
 import urllib.parse, urllib.request
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -1059,6 +1059,9 @@ def sync(inbox):
     print(f"filled jobs with no open questions left (add to today): {len(ready)}")
     print("\n".join(line(j) for j in ready))
     con.close()
+    # The next run reads fresh copies, so something deleted on the dashboard can't come back from an old file.
+    for sub in ("decisions", "questions", "state"):
+        shutil.rmtree(inbox / sub, ignore_errors=True)
 
 
 def main():
