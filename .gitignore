@@ -1,0 +1,5 @@
+# Everything about you lives in me/. It never goes in the shared repo.
+me/
+__pycache__/
+*.pyc
+.claude/settings.local.json

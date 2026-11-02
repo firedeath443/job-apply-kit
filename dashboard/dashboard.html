@@ -1,0 +1,187 @@
+<title>Job Run Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* A morning shift board: what needs you sits on top, in the order you'd act on it. */
+:root{--bg:#eef1f6;--paper:#fff;--ink:#17223a;--muted:#5a6780;--rule:#d4dbe7;--accent:#2740c9;--on-accent:#fff;--soft:#e4e9fb;
+--alert:#b5420f;--alert-soft:#fcebe0;--good:#17794f;--good-soft:#dff3ea;--ask:#6a3fb5;--ask-soft:#efe8fb;
+--display:"Bricolage Grotesque",Georgia,serif;--body:"Figtree",system-ui,sans-serif;--mono:"JetBrains Mono",Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10141f;--paper:#1a2030;--ink:#e6ebf5;--muted:#9aa6bd;--rule:#2d3548;--accent:#8ea2ff;--on-accent:#10141f;--soft:#232c4a;
+--alert:#ff9d6b;--alert-soft:#3a2317;--good:#5fd0a0;--good-soft:#17332a;--ask:#c0a2f5;--ask-soft:#2a2240;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10141f;--paper:#1a2030;--ink:#e6ebf5;--muted:#9aa6bd;--rule:#2d3548;--accent:#8ea2ff;--on-accent:#10141f;--soft:#232c4a;
+--alert:#ff9d6b;--alert-soft:#3a2317;--good:#5fd0a0;--good-soft:#17332a;--ask:#c0a2f5;--ask-soft:#2a2240;color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+.wrap{max-width:820px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1{font:800 clamp(26px,6vw,36px)/1.1 var(--display);margin:0;letter-spacing:-.01em}
+h2{font:600 19px/1.2 var(--display);margin:0;display:flex;align-items:baseline;gap:8px}
+h2 small{font:500 13px var(--mono);color:var(--muted)}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.tally{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}.tally b{font:500 16px var(--mono)}
+section{display:grid;gap:10px;min-width:0}.list{display:grid;gap:8px}
+.card{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:12px 14px;display:grid;gap:6px;min-width:0}
+.card.alert{border-left:4px solid var(--alert);background:var(--alert-soft)}
+.card.ask{border-left:4px solid var(--ask);background:var(--ask-soft)}
+.card.pc{border-left:4px solid var(--alert)}
+.kind{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--alert)}
+.card.ask .kind{color:var(--ask)}
+.t{font-weight:600;overflow-wrap:anywhere}a.t{color:inherit;text-decoration:underline;text-decoration-color:var(--rule);text-underline-offset:3px}
+.meta{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.why{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:13px}.why .p{color:var(--good)}.why .m{color:var(--alert)}
+.row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.score{font:500 12px var(--mono);background:var(--soft);color:var(--accent);padding:1px 6px;border-radius:4px;margin-left:6px;white-space:nowrap}
+button{font:600 14px var(--body);padding:7px 12px;min-height:36px;border-radius:7px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer}
+button.main{background:var(--accent);color:var(--on-accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.55;cursor:default}
+input[type=text],select{font:16px var(--body);padding:6px 9px;border:1px solid var(--rule);border-radius:7px;background:var(--paper);color:var(--ink);min-width:0}
+input[type=text]{flex:1 1 170px}
+.done{color:var(--good);font-size:14px;font-weight:600}
+.pending{font-size:13px;color:var(--good);font-weight:600}
+details>summary{cursor:pointer;list-style-position:outside}details>summary h2{display:inline-flex}
+details[open]>summary{margin-bottom:10px}
+.empty{color:var(--muted);font-size:14px;margin:0}
+.set{display:grid;gap:12px}.set label{display:grid;gap:3px;font-weight:600;font-size:14px}.set .hint{font-weight:400;color:var(--muted);font-size:13px}
+.err{background:var(--alert-soft);color:var(--alert);padding:8px 12px;border-radius:7px;font-size:14px}
+table{border-collapse:collapse;font-size:13px;width:100%}td,th{padding:3px 8px;text-align:left;border-bottom:1px solid var(--rule)}.scroll{overflow-x:auto}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Job Run Desk</h1>
+    <p class="sub" id="updated">Waiting for your first run. Today's jobs appear here after it finishes.</p>
+  </header>
+  <div class="tally" id="tally"></div>
+  <div class="err" id="err" hidden></div>
+  <section id="alertsSec" hidden><h2>Replies from employers</h2><div class="list" id="alerts"></div></section>
+  <section id="askSec" hidden><h2>Questions for you <small id="askN"></small></h2><div class="list" id="asks"></div></section>
+  <section id="pcSec" hidden><h2>Finish at the computer <small id="pcN"></small></h2><div class="list" id="pc"></div></section>
+  <section id="filledSec" hidden><h2>Filled out, waiting on your answers</h2><div class="list" id="filled"></div></section>
+  <section><h2>Next up <small id="shortN"></small></h2><div class="list" id="short"><p class="empty">Nothing lined up yet.</p></div></section>
+  <details><summary><h2>More good matches <small id="applyN"></small></h2></summary><div class="list" id="apply"></div></details>
+  <details><summary><h2>Applied <small id="appliedN"></small></h2></summary><div class="list" id="applied"></div></details>
+  <details><summary><h2>Settings</h2></summary>
+    <form class="set" id="settings">
+      <label for="sCount">Applications per day<span class="hint">More uses more of your Claude plan.</span>
+        <select id="sCount"></select></label>
+      <label for="sSubmit">When a form is filled out
+        <select id="sSubmit"><option value="review">Ask me first</option><option value="auto">Submit it automatically</option></select></label>
+      <label for="sPicking">Who picks the jobs
+        <select id="sPicking"><option value="auto">Pick the best matches for me</option><option value="mine">Only what I add to Next up</option></select></label>
+      <label for="sPaused">Daily run
+        <select id="sPaused"><option value="false">On</option><option value="true">Paused (still updates this list)</option></select></label>
+      <p class="sub">Changes apply at the next run. To change job types, pay or location, tell Claude in your job-apply-kit folder.</p>
+    </form>
+  </details>
+  <details><summary><h2>Where jobs came from</h2></summary><div class="scroll"><table id="sources"></table></div></details>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https:\/\//i.test(u || "") ? u : "";
+const docId = key => "d" + Array.from(new TextEncoder().encode(key)).reduce((h, b) => (h * 31 + b) >>> 0, 7).toString(36) + key.length;
+let db = null, feed = null, decisions = {}, skipping = null;
+
+function act(key, decision, reason) {
+  const at = new Date().toISOString();
+  decisions[key] = {key, decision, reason: reason || "", at};
+  render();
+  if (!db) return;
+  db.doc("decisions/" + docId(key)).set(decisions[key]).catch(showErr);
+}
+function showErr(e) { $("err").hidden = false; $("err").textContent = "That didn't save. Check your connection and try again. (" + (e && (e.code || e.message) || "error") + ")"; }
+
+// A tap made since the last run still shows until the next run picks it up.
+function pending(key) {
+  const d = decisions[key];
+  return d && (!feed || Date.parse(d.at) > Date.parse(feed.updated)) ? d : null;
+}
+const LABEL = {shortlist:"Added to Next up", skip:"Skipped", applied:"Marked as applied"};
+
+function jobCard(j, buttons, cls) {
+  const p = pending(j.key);
+  const why = (j.plus||[]).map(x => `<span class="p">+ ${esc(x)}</span>`).join("") + (j.minus||[]).map(x => `<span class="m">− ${esc(x)}</span>`).join("");
+  const url = safeUrl(j.url);
+  const title = url ? `<a class="t" href="${esc(url)}" target="_blank" rel="noopener">${esc(j.title)}</a>` : `<span class="t">${esc(j.title)}</span>`;
+  let foot;
+  if (p) foot = `<span class="pending">${LABEL[p.decision] || "Saved"}. Applies at the next run.</span> <button data-undo="${esc(j.key)}">Undo</button>`;
+  else if (skipping === j.key) foot = `<input type="text" id="skipWhy" aria-label="Why skip it?" placeholder="Why skip it? (optional, tunes the ranking)"><button class="main" data-skip-go="${esc(j.key)}">Skip it</button><button data-skip-cancel="1">Cancel</button>`;
+  else foot = buttons.map(([label, d]) => d === "skip" ? `<button data-skip="${esc(j.key)}">${label}</button>` : `<button data-act="${d}" data-key="${esc(j.key)}">${label}</button>`).join("");
+  return `<div class="card ${cls||""}"><div>${title}<span class="score">${esc(j.score)}</span></div>
+    <div class="meta">${esc(j.company)} · ${esc(j.location)} · ${esc(j.pay)}</div>
+    ${j.reason && cls ? `<div>${esc(j.reason.replace(/^At the PC:\s*/, ""))}</div>` : ""}
+    ${cls ? "" : `<div class="why">${why}</div>`}
+    <div class="row">${foot}</div></div>`;
+}
+
+function render() {
+  const f = feed;
+  if (f) {
+    $("updated").textContent = "Last updated " + new Date(f.updated).toLocaleString([], {weekday:"short", month:"short", day:"numeric", hour:"numeric", minute:"2-digit"}) + ".";
+    const c = f.counts;
+    $("tally").innerHTML = [["Applied", c.applied], ["Next up", c.shortlist], ["Waiting on you", c.filled + c.blocked], ["More matches", c.apply]].map(([k, v]) => `<span>${k} <b>${v}</b></span>`).join("");
+    $("pcSec").hidden = !f.blocked.length; $("pcN").textContent = f.blocked.length || "";
+    $("pc").innerHTML = f.blocked.map(j => jobCard(j, [["I submitted it","applied"],["Try again","shortlist"],["Skip","skip"]], "pc")).join("");
+    $("filledSec").hidden = !f.filled.length;
+    $("filled").innerHTML = f.filled.map(j => jobCard(j, [["I submitted it","applied"],["Skip","skip"]], "pc")).join("");
+    $("shortN").textContent = f.shortlist.length || "";
+    $("short").innerHTML = f.shortlist.map(j => jobCard(j, [["Skip","skip"]])).join("") || `<p class="empty">Nothing lined up. Add some from More good matches.</p>`;
+    $("applyN").textContent = f.apply.length || "";
+    $("apply").innerHTML = f.apply.map(j => jobCard(j, [["Add to Next up","shortlist"],["Skip","skip"],["I already applied","applied"]])).join("") || `<p class="empty">None right now.</p>`;
+    $("appliedN").textContent = f.counts.applied || "";
+    $("applied").innerHTML = f.applied.map(j => `<div class="card"><div class="t">${esc(j.title)}</div><div class="meta">${esc(j.company)} · ${esc(j.location)} · ${esc(j.at)}</div></div>`).join("") || `<p class="empty">Nothing yet.</p>`;
+    $("sources").innerHTML = "<tr><th>Source</th><th>Status</th><th>Found</th><th>Kept</th></tr>" + f.sources.map(s => `<tr><td>${esc(s.source)}</td><td>${esc(s.status)}</td><td>${esc(s.found)}</td><td>${esc(s.kept)}</td></tr>`).join("");
+  }
+}
+
+function renderQuestions(docs) {
+  const rows = docs.filter(q => !q.used).sort((a, b) => (!!a.answer - !!b.answer) || String(a.asked).localeCompare(String(b.asked)));
+  const open = rows.filter(q => !q.answer).length;
+  $("askSec").hidden = !rows.length; $("askN").textContent = open || "";
+  $("asks").innerHTML = rows.map(q => q.answer
+    ? `<div class="card ask"><span class="kind">${esc(q.company || "All applications")}</span><div class="t">${esc(q.question)}</div><div class="row"><span class="done">✓ ${esc(q.answer)}</span><button data-reask="${esc(q.id)}">Change</button></div></div>`
+    : `<form class="card ask" data-q="${esc(q.id)}"><span class="kind">${esc(q.company || "All applications")}</span><div class="t">${esc(q.question)}</div>
+       <div class="row">${(q.options||[]).map(o => `<button type="button" data-answer="${esc(o)}">${esc(o)}</button>`).join("")}</div>
+       <div class="row"><input type="text" name="a" aria-label="Your own answer" placeholder="Or type your answer"><button class="main">Send</button></div></form>`).join("");
+}
+function renderAlerts(docs) {
+  const rows = docs.filter(a => !a.done && ["offer","interview","assessment","todo"].includes(a.kind));
+  $("alertsSec").hidden = !rows.length;
+  $("alerts").innerHTML = rows.map(a => { const u = safeUrl(a.url); return `<div class="card alert"><span class="kind">${esc(a.kind)}</span><div class="t">${esc(a.company)}</div><div>${esc(a.summary)}</div>
+    <div class="row">${u ? `<a href="${esc(u)}" target="_blank" rel="noopener">Open in Gmail</a>` : ""}<button data-done="${esc(a.id)}">Done, hide this</button></div></div>`; }).join("");
+}
+
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.act) act(t.dataset.key, t.dataset.act);
+  else if (t.dataset.undo) { const k = t.dataset.undo; delete decisions[k]; render(); db && db.doc("decisions/" + docId(k)).delete().catch(showErr); }
+  else if (t.dataset.skip) { skipping = t.dataset.skip; render(); const i = $("skipWhy"); if (i) i.focus(); }
+  else if (t.dataset.skipCancel) { skipping = null; render(); }
+  else if (t.dataset.skipGo) { const r = $("skipWhy") ? $("skipWhy").value : ""; const k = t.dataset.skipGo; skipping = null; act(k, "skip", r); }
+  else if (t.dataset.answer) { const f = t.closest("form"); db.doc("questions/" + f.dataset.q).update({answer: t.dataset.answer, answered: new Date().toISOString()}).catch(showErr); }
+  else if (t.dataset.reask) { db.doc("questions/" + t.dataset.reask).update({answer: null}).catch(showErr); }
+  else if (t.dataset.done) { db.doc("alerts/" + t.dataset.done).update({done: true}).catch(showErr); }
+});
+document.addEventListener("submit", e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.dataset.q && f.a.value.trim()) db.doc("questions/" + f.dataset.q).update({answer: f.a.value.trim(), answered: new Date().toISOString()}).catch(showErr);
+});
+for (let n = 1; n <= 15; n++) $("sCount").insertAdjacentHTML("beforeend", `<option value="${n}">${n}</option>`);
+["sCount","sSubmit","sPicking","sPaused"].forEach(id => $(id).addEventListener("change", () => {
+  if (!db) return;
+  db.doc("state/settings").set({count: +$("sCount").value, submit: $("sSubmit").value, picking: $("sPicking").value, paused: $("sPaused").value === "true"}).catch(showErr);
+}));
+
+(async () => {
+  db = await claude.use("db");
+  if (!db) { $("err").hidden = false; $("err").textContent = "Sign in to Claude to see your jobs."; return; }
+  const collect = snap => snap.docs.map(d => Object.assign({id: d.id}, d.data()));
+  db.doc("state/feed").onSnapshot(s => { if (s.exists) { feed = s.data(); render(); } }, showErr);
+  db.doc("state/settings").onSnapshot(s => { if (!s.exists) return; const v = s.data();
+    $("sCount").value = String(v.count ?? 3); $("sSubmit").value = v.submit || "review"; $("sPicking").value = v.picking || "auto"; $("sPaused").value = String(!!v.paused); }, showErr);
+  db.collection("questions").onSnapshot(s => renderQuestions(collect(s)), showErr);
+  db.collection("alerts").onSnapshot(s => renderAlerts(collect(s)), showErr);
+  db.collection("decisions").onSnapshot(s => { decisions = {}; collect(s).forEach(d => decisions[d.key] = d); render(); }, showErr);
+})();
+</script>
